@@ -1,129 +1,132 @@
 import 'dart:io';
 
 class TicTacToe {
-  List<List<String>> board;
-  String currentPlayer;
+  // Game board represented as a list of 9 elements
+  List<String> board = List.filled(9, ' ');
+  
+  // Current player ('X' or 'O')
+  String currentPlayer = 'X';
 
-  TicTacToe()
-      : board = List.generate(3, (_) => List.generate(3, (_) => ' ')),
-        currentPlayer = 'X';
-
+  // Display the current state of the board
   void displayBoard() {
     print('\n');
-    for (int i = 0; i < 3; i++) {
-      print(' ${board[i][0]} | ${board[i][1]} | ${board[i][2]} ');
-      if (i < 2) print('---+---+---');
-    }
+    print(' ${board[0]} | ${board[1]} | ${board[2]} ');
+    print('---+---+---');
+    print(' ${board[3]} | ${board[4]} | ${board[5]} ');
+    print('---+---+---');
+    print(' ${board[6]} | ${board[7]} | ${board[8]} ');
     print('\n');
   }
 
-  bool isValidMove(int row, int col) {
-    return row >= 0 && row < 3 && col >= 0 && col < 3 && board[row][col] == ' ';
+  // Check if the move is valid
+  bool isValidMove(int position) {
+    return position >= 0 && position < 9 && board[position] == ' ';
   }
 
-  bool makeMove(int position) {
-    int row = (position - 1) ~/ 3;
-    int col = (position - 1) % 3;
-    if (isValidMove(row, col)) {
-      board[row][col] = currentPlayer;
-      return true;
-    }
-    return false;
-  }
+  // Check for a winner
+  bool checkWinner() {
+    // Define winning combinations
+    List<List<int>> winCombos = [
+      // Rows
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      // Columns
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      // Diagonals
+      [0, 4, 8],
+      [2, 4, 6]
+    ];
 
-  bool checkWin() {
-    // Check rows and columns
-    for (int i = 0; i < 3; i++) {
-      if ((board[i][0] == currentPlayer &&
-              board[i][1] == currentPlayer &&
-              board[i][2] == currentPlayer) ||
-          (board[0][i] == currentPlayer &&
-              board[1][i] == currentPlayer &&
-              board[2][i] == currentPlayer)) {
+    for (var combo in winCombos) {
+      if (board[combo[0]] != ' ' &&
+          board[combo[0]] == board[combo[1]] &&
+          board[combo[1]] == board[combo[2]]) {
         return true;
       }
     }
-
-    // Check diagonals
-    if ((board[0][0] == currentPlayer &&
-            board[1][1] == currentPlayer &&
-            board[2][2] == currentPlayer) ||
-        (board[0][2] == currentPlayer &&
-            board[1][1] == currentPlayer &&
-            board[2][0] == currentPlayer)) {
-      return true;
-    }
-
     return false;
   }
 
+  // Check if the board is full (draw)
   bool isBoardFull() {
-    for (var row in board) {
-      if (row.contains(' ')) return false;
-    }
-    return true;
+    return !board.contains(' ');
   }
 
-  void switchPlayer() {
-    currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
+  // Make a move
+  void makeMove(int position) {
+    board[position] = currentPlayer;
+    currentPlayer = currentPlayer == 'X' ? 'O' : 'X';
   }
 
-  void playGame() {
-    print("Welcome to Tic-Tac-Toe!\n");
-    displayBoard();
+  // Main game logic
+  void play() {
+    bool gameOver = false;
+    String winner = '';
 
-    while (true) {
-      print("Player $currentPlayer's turn. Enter your move (1-9):");
-      int? move;
-      try {
-        move = int.parse(stdin.readLineSync()!);
-      } catch (e) {
-        print("Invalid input. Please enter a number between 1 and 9.");
-        continue;
-      }
-
-      if (move < 1 || move > 9) {
-        print("Invalid input. Please enter a number between 1 and 9.");
-        continue;
-      }
-
-      if (!makeMove(move)) {
-        print("Invalid move. The cell is already occupied. Try again.");
-        continue;
-      }
-
+    while (!gameOver) {
+      // Display current board
       displayBoard();
 
-      if (checkWin()) {
-        print("Player $currentPlayer wins!\n");
-        break;
-      }
+      // Prompt for move
+      print('Player $currentPlayer, enter your move (1-9):');
+      
+      try {
+        // Read input and convert to board index (0-8)
+        int input = int.parse(stdin.readLineSync() ?? '') - 1;
 
-      if (isBoardFull()) {
-        print("It's a draw!\n");
-        break;
-      }
+        // Validate move
+        if (isValidMove(input)) {
+          makeMove(input);
 
-      switchPlayer();
+          // Check for winner
+          if (checkWinner()) {
+            displayBoard();
+            winner = currentPlayer == 'X' ? 'O' : 'X';
+            print('Player $winner wins!');
+            gameOver = true;
+          } 
+          // Check for draw
+          else if (isBoardFull()) {
+            displayBoard();
+            print('It\'s a draw!');
+            gameOver = true;
+          }
+        } else {
+          print('Invalid move. The cell is either occupied or out of range.');
+        }
+      } catch (e) {
+        print('Invalid input. Please enter a number between 1 and 9.');
+      }
     }
 
-    print("Do you want to play again? (y/n):");
-    String? response = stdin.readLineSync();
-    if (response != null && response.toLowerCase() == 'y') {
-      resetGame();
-      playGame();
-    } else {
-      print("Thanks for playing Tic-Tac-Toe!");
+    // Ask to play again
+    print('Do you want to play again? (yes/no)');
+    String? playAgain = stdin.readLineSync()?.toLowerCase();
+    if (playAgain == 'yes' || playAgain == 'y') {
+      // Reset the game
+      board = List.filled(9, ' ');
+      currentPlayer = 'X';
+      play();
     }
   }
 
-  void resetGame() {
-    board = List.generate(3, (_) => List.generate(3, (_) => ' '));
-    currentPlayer = 'X';
+  // Start the game
+  void start() {
+    print('Welcome to Tic-Tac-Toe!');
+    print('Players will take turns entering a number (1-9) corresponding to the board positions:');
+    print(' 1 | 2 | 3 ');
+    print('---+---+---');
+    print(' 4 | 5 | 6 ');
+    print('---+---+---');
+    print(' 7 | 8 | 9 ');
+    play();
   }
 }
 
 void main() {
   TicTacToe game = TicTacToe();
-  game.playGame();
+  game.start();
 }
